@@ -1,0 +1,5 @@
+cat << 'EOF' > /opt/heartbeats/.dockerignore
+heartbeats
+monitors.json
+.git
+EOF
