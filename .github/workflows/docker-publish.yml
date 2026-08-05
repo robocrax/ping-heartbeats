@@ -43,3 +43,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Update Docker Hub Description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: robocrax/ping-heartbeats
+          short-description: "Lightweight dark-mode network ping monitor with heartbeat webhooks."
+          readme-filepath: ./README.md
