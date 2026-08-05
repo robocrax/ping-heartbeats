@@ -1,4 +1,4 @@
-# Heartbeats (`robocrax/ping-heartbeats`)
+# Local device pings to heartbeats
 
 A lightweight, modern dark-mode device monitor built with Go and Tailwind CSS. Periodically pings local devices and triggers external Heartbeat webhooks (e.g., BetterStack, Healthchecks.io).
 
