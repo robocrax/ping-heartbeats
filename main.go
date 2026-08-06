@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -40,16 +41,46 @@ type Monitor struct {
 type App struct {
 	mu       sync.Mutex
 	Monitors map[string]*Monitor `json:"monitors"`
+	dataDir  string
 	dataFile string
+	logFile  string
 }
 
-func NewApp(dataFile string) *App {
+func NewApp(dataDir string) *App {
+	_ = os.MkdirAll(dataDir, 0755)
+
 	app := &App{
 		Monitors: make(map[string]*Monitor),
-		dataFile: dataFile,
+		dataDir:  dataDir,
+		dataFile: filepath.Join(dataDir, "monitors.json"),
+		logFile:  filepath.Join(dataDir, "history.log"),
 	}
 	app.loadData()
 	return app
+}
+
+func (a *App) appendHistoryLog(m *Monitor, point PingPoint) {
+	statusStr := "UP"
+	if !point.Success {
+		statusStr = "DOWN"
+	}
+
+	entry := fmt.Sprintf("[%s] Monitor: %s (%s) | Status: %s | Latency: %.2fms | Target: %s\n",
+		time.Now().Format(time.RFC3339),
+		m.Name,
+		m.IP,
+		statusStr,
+		point.LatencyMs,
+		m.HeartbeatURL,
+	)
+
+	f, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	_, _ = f.WriteString(entry)
 }
 
 func (a *App) loadData() {
@@ -122,6 +153,8 @@ func (a *App) pingAndUpdate(m *Monitor) {
 		m.PingHistory = m.PingHistory[len(m.PingHistory)-30:]
 	}
 
+	a.appendHistoryLog(m, point)
+
 	shouldSend := false
 	statusChanged := (m.LastSentStatus != currentStatus)
 	timeSinceLastWebhook := now.Sub(m.LastWebhookSent)
@@ -159,7 +192,12 @@ func triggerWebhook(baseURL string, isUp bool) {
 }
 
 func main() {
-	app := NewApp("monitors.json")
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "/data"
+	}
+
+	app := NewApp(dataDir)
 
 	for _, m := range app.Monitors {
 		app.StartMonitor(m)
@@ -257,7 +295,7 @@ func main() {
 		port = "8080"
 	}
 
-	fmt.Printf("Heartbeats server running at http://0.0.0.0:%s\n", port)
+	fmt.Printf("Heartbeats server running at http://0.0.0.0:%s (Data directory: %s)\n", port, dataDir)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
