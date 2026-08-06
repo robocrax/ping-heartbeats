@@ -29,6 +29,7 @@ type Monitor struct {
 	Name            string      `json:"name"`
 	IP              string      `json:"ip"`
 	HeartbeatURL    string      `json:"heartbeat_url"`
+	CustomFailURL   string      `json:"custom_fail_url"`
 	Status          string      `json:"status"` // "up", "down", "pending"
 	LastChecked     time.Time   `json:"last_checked"`
 	LastSuccess     time.Time   `json:"last_success"`
@@ -168,20 +169,24 @@ func (a *App) pingAndUpdate(m *Monitor) {
 	if shouldSend && m.HeartbeatURL != "" {
 		m.LastWebhookSent = now
 		m.LastSentStatus = currentStatus
-		go triggerWebhook(m.HeartbeatURL, isUp)
+		go triggerWebhook(m.HeartbeatURL, m.CustomFailURL, isUp)
 	}
 
 	a.saveData()
 	a.mu.Unlock()
 }
 
-func triggerWebhook(baseURL string, isUp bool) {
+func triggerWebhook(baseURL string, customFailURL string, isUp bool) {
 	if baseURL == "" {
 		return
 	}
 	targetURL := baseURL
 	if !isUp {
-		targetURL = strings.TrimRight(baseURL, "/") + "/fail"
+		if strings.TrimSpace(customFailURL) != "" {
+			targetURL = strings.TrimSpace(customFailURL)
+		} else {
+			targetURL = strings.TrimRight(baseURL, "/") + "/fail"
+		}
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
@@ -249,6 +254,7 @@ func main() {
 					existing.Name = input.Name
 					existing.IP = input.IP
 					existing.HeartbeatURL = input.HeartbeatURL
+					existing.CustomFailURL = input.CustomFailURL
 					app.saveData()
 					app.StartMonitor(existing)
 					json.NewEncoder(w).Encode(existing)
@@ -257,12 +263,13 @@ func main() {
 			}
 
 			m := &Monitor{
-				ID:           fmt.Sprintf("%d", time.Now().UnixNano()),
-				Name:         input.Name,
-				IP:           input.IP,
-				HeartbeatURL: input.HeartbeatURL,
-				Status:       "pending",
-				PingHistory:  []PingPoint{},
+				ID:            fmt.Sprintf("%d", time.Now().UnixNano()),
+				Name:          input.Name,
+				IP:            input.IP,
+				HeartbeatURL:  input.HeartbeatURL,
+				CustomFailURL: input.CustomFailURL,
+				Status:        "pending",
+				PingHistory:   []PingPoint{},
 			}
 
 			app.Monitors[m.ID] = m
@@ -375,6 +382,10 @@ const htmlTemplate = `<!DOCTYPE html>
           <label class="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Heartbeat URL</label>
           <input type="url" id="heartbeat_url" required placeholder="https://hc-ping.com/your-uuid" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-base md:text-sm text-white focus:outline-none focus:border-indigo-500">
         </div>
+        <div>
+          <label class="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Custom Fail URL (Optional)</label>
+          <input type="url" id="custom_fail_url" placeholder="https://hc-ping.com/your-uuid/fail" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-base md:text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
         <div class="flex gap-3 pt-3">
           <button type="button" onclick="closeModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-sm transition">Cancel</button>
           <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-sm transition">Save Monitor</button>
@@ -403,6 +414,7 @@ const htmlTemplate = `<!DOCTYPE html>
         document.getElementById('name').value = m.name;
         document.getElementById('ip').value = m.ip;
         document.getElementById('heartbeat_url').value = m.heartbeat_url;
+        document.getElementById('custom_fail_url').value = m.custom_fail_url || '';
       } else {
         document.getElementById('modal-title').innerText = 'Create New Monitor';
         document.getElementById('monitor-id').value = '';
@@ -630,7 +642,8 @@ const htmlTemplate = `<!DOCTYPE html>
         id: document.getElementById('monitor-id').value,
         name: document.getElementById('name').value,
         ip: document.getElementById('ip').value,
-        heartbeat_url: document.getElementById('heartbeat_url').value
+        heartbeat_url: document.getElementById('heartbeat_url').value,
+        custom_fail_url: document.getElementById('custom_fail_url').value
       };
       await fetch('/api/monitors', {
         method: 'POST',
