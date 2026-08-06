@@ -49,6 +49,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: robocrax/ping-heartbeats
-          short-description: "Lightweight dark-mode network ping monitor with heartbeat webhooks."
+          repository: ${{ github.repository }}
+          short-description: ${{ github.event.repository.description }}
           readme-filepath: ./README.md
