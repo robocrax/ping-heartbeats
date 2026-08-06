@@ -36,7 +36,7 @@ jobs:
             type=ref,event=tag
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -49,6 +49,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: robocrax/heartbeats-ping-sidecar
-          short-description: ${{ github.event.repository.description }}
+          repository: ${{ github.repository }}
+          short-description: ${{ github.event.repository.description || 'Lightweight dark-mode network ping monitor sidecar with heartbeat webhooks.' }}
           readme-filepath: ./README.md
