@@ -12,7 +12,7 @@ Obviously, this utility and the device you want to monitor have to be on the sam
 - **Smart Throttling**: Triggers external heartbeat webhooks immediately on failures/recoveries but rate-limits stable states to 60s.
 - **Microservice Footprint**: Zero heavy JS frameworks—embeds everything into a minimal Go binary running on Alpine Linux.
 - Yes, this was fully made with AI, including this description 🤦
-- When a device does not ping and goes down, it sends the heartbeat to your `{URL}/fail` endpoint. (hardcoded)
+- When a device does not ping and goes down, it sends the heartbeat to another URL so you can be notified
 
 ## Running with Docker
 
@@ -22,9 +22,8 @@ I publish this using Cloudflare tunnels so I don't even have to expose ports.
 
 ```bash
 docker run -d \
-  --name heartbeats \
   -p 8080:8080 \
   -e PORT=8080 \
-  -v heartbeats_data:/app \
+  -v heartbeats_data:/data \
   robocrax/heartbeats-ping-sidecar:latest
 ```
