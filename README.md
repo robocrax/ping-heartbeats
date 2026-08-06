@@ -26,5 +26,5 @@ docker run -d \
   -p 8080:8080 \
   -e PORT=8080 \
   -v heartbeats_data:/app \
-  robocrax/ping-heartbeats:latest
+  robocrax/heartbeats-ping-sidecar:latest
 ```
