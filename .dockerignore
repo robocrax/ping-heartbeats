@@ -1,3 +1,5 @@
 heartbeats
-monitors.json
+data/
+*.json
+*.log
 .git
