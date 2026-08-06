@@ -49,6 +49,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ github.repository }}
+          repository: robocrax/heartbeats-ping-sidecar
           short-description: ${{ github.event.repository.description }}
           readme-filepath: ./README.md
