@@ -50,5 +50,5 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ github.repository }}
-          short-description: ${{ github.event.repository.description || 'Lightweight dark-mode network ping monitor sidecar with heartbeat webhooks.' }}
+          short-description: ${{ github.event.repository.description || 'A vibe-coded utility to ping devices on your network and send BetterStack heartbeats' }}
           readme-filepath: ./README.md
